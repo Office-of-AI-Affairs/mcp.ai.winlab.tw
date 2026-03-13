@@ -20,13 +20,102 @@ const CATEGORY_PREFIXES: Record<string, string> = {
   organization: "organization/",
 };
 
+function success(data: unknown) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify({ success: true, data }) }],
+  };
+}
+
+function error(message: string) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify({ success: false, error: message }) }],
+    isError: true,
+  };
+}
+
+function getExtFromMime(mime: string): string {
+  const map: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+  return map[mime] || "jpg";
+}
+
+function generatePath(category: string, ext: string): string {
+  const prefix = CATEGORY_PREFIXES[category] || "";
+  return `${prefix}${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+}
+
+async function uploadToStorage(
+  supabase: SupabaseClient,
+  path: string,
+  buffer: Buffer | Uint8Array,
+  contentType: string,
+) {
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, buffer, {
+      contentType,
+      cacheControl: "3600",
+      upsert: false,
+    });
+
+  if (uploadError) return error(uploadError.message);
+
+  const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return success({ url: publicUrl, path });
+}
+
 export function registerImageTools(
   server: McpServer,
   supabase: SupabaseClient,
 ) {
+  // --- upload_image_from_url (preferred) ---
+  server.tool(
+    "upload_image_from_url",
+    "Download an image from a URL and upload to storage. Returns the public URL. Preferred over base64 for large images.",
+    {
+      url: z.string().url().describe("URL of the image to download"),
+      category: z
+        .enum([
+          "announcement",
+          "recruitment",
+          "result",
+          "event",
+          "carousel",
+          "organization",
+        ])
+        .describe("Category determines storage path prefix"),
+    },
+    async ({ url, category }) => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        return error(`Failed to download image: ${response.status} ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+      if (!ALLOWED_MIME_TYPES.includes(contentType)) {
+        return error(`Unsupported image type: ${contentType}. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength > MAX_SIZE_BYTES) {
+        return error(`Image too large: ${(arrayBuffer.byteLength / 1024 / 1024).toFixed(1)}MB. Max: 5MB`);
+      }
+
+      const ext = getExtFromMime(contentType);
+      const path = generatePath(category, ext);
+
+      return uploadToStorage(supabase, path, new Uint8Array(arrayBuffer), contentType);
+    },
+  );
+
+  // --- upload_image (base64 fallback) ---
   server.tool(
     "upload_image",
-    "Upload an image to storage. Returns the public URL. Use this before creating content that needs images.",
+    "Upload a base64-encoded image to storage. Returns the public URL. Prefer upload_image_from_url for large images.",
     {
       image: z.string().describe("Base64-encoded image data"),
       filename: z.string().describe("Original filename (e.g., 'photo.jpg')"),
@@ -45,76 +134,15 @@ export function registerImageTools(
         .describe("Category determines storage path prefix"),
     },
     async ({ image, filename, content_type, category }) => {
-      if (!ALLOWED_MIME_TYPES.includes(content_type)) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({
-                success: false,
-                error: `Unsupported type: ${content_type}`,
-              }),
-            },
-          ],
-          isError: true,
-        };
-      }
-
       const buffer = Buffer.from(image, "base64");
       if (buffer.byteLength > MAX_SIZE_BYTES) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({
-                success: false,
-                error: `Image too large: ${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB. Max: 5MB`,
-              }),
-            },
-          ],
-          isError: true,
-        };
+        return error(`Image too large: ${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB. Max: 5MB`);
       }
 
-      const ext = filename.split(".").pop() || "jpg";
-      const prefix = CATEGORY_PREFIXES[category] || "";
-      const path = `${prefix}${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const ext = filename.split(".").pop() || getExtFromMime(content_type);
+      const path = generatePath(category, ext);
 
-      const { error } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, buffer, {
-          contentType: content_type,
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (error) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: JSON.stringify({ success: false, error: error.message }),
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(BUCKET).getPublicUrl(path);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify({
-              success: true,
-              data: { url: publicUrl, path },
-            }),
-          },
-        ],
-      };
+      return uploadToStorage(supabase, path, buffer, content_type);
     },
   );
 }
