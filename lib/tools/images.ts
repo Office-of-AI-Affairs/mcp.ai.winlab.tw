@@ -72,12 +72,16 @@ export function registerImageTools(
   server: McpServer,
   supabase: SupabaseClient,
 ) {
-  // --- upload_image_from_url (preferred) ---
   server.tool(
-    "upload_image_from_url",
-    "Download an image from a URL and upload to storage. Returns the public URL. Preferred over base64 for large images.",
+    "upload_image",
+    `Upload an image from a public URL to storage. Returns the public URL for use in other tools (e.g. create_recruitment, create_result).
+
+For images on the web: pass the URL directly.
+For LOCAL files on disk: do NOT use this tool. Instead, use curl to POST the file to /api/upload:
+  curl -X POST https://mcp.ai.winlab.tw/api/upload -H "Authorization: Bearer <token>" -F "file=@/path/to/image.jpg" -F "category=recruitment"
+The response JSON contains the public URL you can then use in other tools.`,
     {
-      url: z.string().url().describe("URL of the image to download"),
+      url: z.string().url().describe("Public URL of the image to download and upload"),
       category: z
         .enum([
           "announcement",
@@ -109,40 +113,6 @@ export function registerImageTools(
       const path = generatePath(category, ext);
 
       return uploadToStorage(supabase, path, new Uint8Array(arrayBuffer), contentType);
-    },
-  );
-
-  // --- upload_image (base64 fallback) ---
-  server.tool(
-    "upload_image",
-    "Upload a base64-encoded image to storage. Returns the public URL. Prefer upload_image_from_url for large images.",
-    {
-      image: z.string().describe("Base64-encoded image data"),
-      filename: z.string().describe("Original filename (e.g., 'photo.jpg')"),
-      content_type: z
-        .enum(["image/jpeg", "image/png", "image/webp", "image/gif"])
-        .describe("MIME type"),
-      category: z
-        .enum([
-          "announcement",
-          "recruitment",
-          "result",
-          "event",
-          "carousel",
-          "organization",
-        ])
-        .describe("Category determines storage path prefix"),
-    },
-    async ({ image, filename, content_type, category }) => {
-      const buffer = Buffer.from(image, "base64");
-      if (buffer.byteLength > MAX_SIZE_BYTES) {
-        return error(`Image too large: ${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB. Max: 5MB`);
-      }
-
-      const ext = filename.split(".").pop() || getExtFromMime(content_type);
-      const path = generatePath(category, ext);
-
-      return uploadToStorage(supabase, path, buffer, content_type);
     },
   );
 }
