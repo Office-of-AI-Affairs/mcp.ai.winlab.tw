@@ -74,6 +74,7 @@ export function registerImageTools(
   server: McpServer,
   supabase: SupabaseClient,
   userId: string,
+  accessToken: string,
 ) {
   // --- create_upload_url: for local file uploads ---
   server.tool(
@@ -102,6 +103,7 @@ The curl response JSON contains { "url": "<public_url>" } which you can use in o
         token,
         user_id: userId,
         category,
+        access_token: accessToken,
       });
 
       if (dbError) return error(`Failed to create upload token: ${dbError.message}`);

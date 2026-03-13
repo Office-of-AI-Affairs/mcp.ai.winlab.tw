@@ -31,20 +31,21 @@ async function authenticateRequest(request: Request) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data: row, error } = await supabase
       .from("upload_tokens")
-      .select("user_id, category, expires_at, used")
+      .select("user_id, category, expires_at, used, access_token")
       .eq("token", uploadToken)
       .single();
 
     if (error || !row) return { error: "Invalid upload token" };
     if (row.used) return { error: "Upload token already used" };
     if (new Date(row.expires_at) < new Date()) return { error: "Upload token expired" };
+    if (!row.access_token) return { error: "Upload token missing credentials" };
 
     // Mark as used
     await supabase.from("upload_tokens").update({ used: true }).eq("token", uploadToken);
 
-    // Use anon client for storage upload (RLS on storage bucket allows public uploads)
+    // Use the stored access token to create an authenticated client
     return {
-      supabase,
+      supabase: createClientWithToken(row.access_token),
       userId: row.user_id,
       category: row.category,
     };

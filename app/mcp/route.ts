@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const server = createMcpServer(supabase, user.id);
+  const server = createMcpServer(supabase, user.id, token);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
