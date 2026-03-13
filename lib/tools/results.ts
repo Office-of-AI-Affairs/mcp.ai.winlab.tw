@@ -175,7 +175,9 @@ export function registerResultTools(
       content: z.string().optional(),
       content_format: z.enum(["markdown", "tiptap"]).optional(),
       date: z.string().optional(),
+      type: z.enum(["personal", "team"]).optional(),
       status: z.enum(["draft", "published"]).optional(),
+      team_id: z.string().uuid().optional(),
       header_image: z.string().optional(),
     },
     async ({
@@ -185,7 +187,9 @@ export function registerResultTools(
       content,
       content_format,
       date,
+      type,
       status,
+      team_id,
       header_image,
     }) => {
       const updates: Record<string, unknown> = {};
@@ -193,7 +197,9 @@ export function registerResultTools(
       if (title !== undefined) updates.title = title;
       if (summary !== undefined) updates.summary = summary;
       if (date !== undefined) updates.date = date;
+      if (type !== undefined) updates.type = type;
       if (status !== undefined) updates.status = status;
+      if (team_id !== undefined) updates.team_id = team_id;
       if (header_image !== undefined) updates.header_image = header_image;
 
       if (content !== undefined) {

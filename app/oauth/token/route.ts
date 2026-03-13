@@ -32,12 +32,35 @@ async function handleAuthorizationCode(body: FormData) {
     );
   }
 
+  const redirectUri = body.get("redirect_uri") as string;
+  const clientId = body.get("client_id") as string;
+
   const stored = await exchangeAuthCode(code);
   if (!stored) {
     return Response.json(
       {
         error: "invalid_grant",
         error_description: "Invalid or expired authorization code",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (redirectUri && redirectUri !== stored.redirectUri) {
+    return Response.json(
+      {
+        error: "invalid_grant",
+        error_description: "redirect_uri mismatch",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (clientId && clientId !== stored.clientId) {
+    return Response.json(
+      {
+        error: "invalid_grant",
+        error_description: "client_id mismatch",
       },
       { status: 400 }
     );

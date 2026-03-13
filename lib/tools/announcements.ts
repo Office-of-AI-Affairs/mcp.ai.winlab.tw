@@ -168,14 +168,16 @@ export function registerAnnouncementTools(
       category: z.string().optional(),
       date: z.string().optional(),
       status: z.enum(["draft", "published"]).optional(),
+      event_id: z.string().uuid().optional(),
     },
-    async ({ id, title, content, content_format, category, date, status }) => {
+    async ({ id, title, content, content_format, category, date, status, event_id }) => {
       const updates: Record<string, unknown> = {};
 
       if (title !== undefined) updates.title = title;
       if (category !== undefined) updates.category = category;
       if (date !== undefined) updates.date = date;
       if (status !== undefined) updates.status = status;
+      if (event_id !== undefined) updates.event_id = event_id;
 
       if (content !== undefined) {
         try {

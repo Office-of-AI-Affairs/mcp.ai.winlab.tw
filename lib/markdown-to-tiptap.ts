@@ -1,5 +1,6 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
+import remarkGfm from "remark-gfm";
 
 type TiptapNode = {
   type: string;
@@ -15,7 +16,7 @@ type TiptapMark = {
 };
 
 export function markdownToTiptap(markdown: string): Record<string, unknown> {
-  const tree = unified().use(remarkParse).parse(markdown);
+  const tree = unified().use(remarkParse).use(remarkGfm).parse(markdown);
   const content = convertChildren(tree.children as MdastNode[]);
   return {
     type: "doc",
