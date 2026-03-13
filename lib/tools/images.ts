@@ -68,18 +68,60 @@ async function uploadToStorage(
   return success({ url: publicUrl, path });
 }
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://mcp.ai.winlab.tw";
+
 export function registerImageTools(
   server: McpServer,
   supabase: SupabaseClient,
+  userId: string,
 ) {
+  // --- create_upload_url: for local file uploads ---
+  server.tool(
+    "create_upload_url",
+    `Generate a one-time upload URL for uploading a LOCAL file from disk. Returns a URL that can be used with curl WITHOUT any Authorization header. The URL expires in 10 minutes and can only be used once.
+
+Usage: call this tool first, then use the returned upload_url with curl:
+  curl -X POST "<upload_url>" -F "file=@/path/to/local/image.jpg"
+The curl response JSON contains { "url": "<public_url>" } which you can use in other tools.`,
+    {
+      category: z
+        .enum([
+          "announcement",
+          "recruitment",
+          "result",
+          "event",
+          "carousel",
+          "organization",
+        ])
+        .describe("Category determines storage path prefix"),
+    },
+    async ({ category }) => {
+      const token = crypto.randomUUID();
+
+      const { error: dbError } = await supabase.from("upload_tokens").insert({
+        token,
+        user_id: userId,
+        category,
+      });
+
+      if (dbError) return error(`Failed to create upload token: ${dbError.message}`);
+
+      const uploadUrl = `${baseUrl}/api/upload?token=${token}`;
+      return success({
+        upload_url: uploadUrl,
+        expires_in: "10 minutes",
+        usage: `curl -X POST "${uploadUrl}" -F "file=@/path/to/image.jpg"`,
+      });
+    },
+  );
+
+  // --- upload_image: for web URLs ---
   server.tool(
     "upload_image",
-    `Upload an image from a public URL to storage. Returns the public URL for use in other tools (e.g. create_recruitment, create_result).
+    `Upload an image from a public URL to storage. Returns the public URL for use in other tools.
 
-For images on the web: pass the URL directly.
-For LOCAL files on disk: do NOT use this tool. Instead, use curl to POST the file to /api/upload:
-  curl -X POST https://mcp.ai.winlab.tw/api/upload -H "Authorization: Bearer <token>" -F "file=@/path/to/image.jpg" -F "category=recruitment"
-The response JSON contains the public URL you can then use in other tools.`,
+For images on the web: use this tool, pass the URL directly.
+For LOCAL files on disk: use create_upload_url instead, then curl the file.`,
     {
       url: z.string().url().describe("Public URL of the image to download and upload"),
       category: z

@@ -18,7 +18,7 @@ export function createMcpServer(supabase: SupabaseClient, userId: string) {
   });
 
   // Register all tool groups
-  registerImageTools(server, supabase);
+  registerImageTools(server, supabase, userId);
   registerAnnouncementTools(server, supabase, userId);
   registerResultTools(server, supabase, userId);
   registerRecruitmentTools(server, supabase);
