@@ -2,10 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { ZodError, z } from "zod";
 import { createAuthCode } from "@/lib/auth/auth-codes";
 import { validateOAuthClientRequest } from "@/lib/auth/oauth-request";
+import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 import { getMcpResourceUrl } from "@/lib/auth/urls";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const callbackBodySchema = z.object({
   email: z.string().email(),
@@ -52,7 +50,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabasePublishableKey);
   const { data, error } = await supabase.auth.signInWithPassword({
     email: body.email,
     password: body.password,

@@ -1,10 +1,8 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 
 export function createClientWithToken(accessToken: string) {
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+  return createSupabaseClient(supabaseUrl, supabasePublishableKey, {
     global: {
       headers: { Authorization: `Bearer ${accessToken}` },
     },

@@ -5,10 +5,8 @@ import {
   parseTokenAuthorizationCodeRequest,
   validateOAuthClientRequest,
 } from "@/lib/auth/oauth-request";
+import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 import { getMcpResourceUrl } from "@/lib/auth/urls";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function POST(request: Request) {
   const body = await request.formData();
@@ -132,7 +130,7 @@ async function handleRefreshToken(body: FormData) {
     );
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabasePublishableKey);
   const { data, error } = await supabase.auth.refreshSession({
     refresh_token: refreshToken,
   });
