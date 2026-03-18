@@ -1,76 +1,42 @@
-"use client";
+import { AuthorizeForm } from "@/app/oauth/authorize/authorize-form";
+import { parseAuthorizeRequest, validateOAuthClientRequest } from "@/lib/auth/oauth-request";
+import { getMcpResourceUrl } from "@/lib/auth/urls";
 
-import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+type AuthorizePageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-function AuthorizeForm() {
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+export default async function AuthorizePage({ searchParams }: AuthorizePageProps) {
+  try {
+    const params = new URLSearchParams();
+    const resolved = await searchParams;
 
-  const clientId = searchParams.get("client_id") || "";
-  const redirectUri = searchParams.get("redirect_uri") || "";
-  const codeChallenge = searchParams.get("code_challenge") || "";
-  const codeChallengeMethod = searchParams.get("code_challenge_method") || "";
-  const state = searchParams.get("state") || "";
-
-  if (!redirectUri || !codeChallenge || codeChallengeMethod !== "S256") {
-    return <p>Invalid OAuth request. Missing required parameters.</p>;
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/oauth/callback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, clientId, redirectUri, codeChallenge, state }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Login failed");
-        setLoading(false);
-        return;
+    for (const [key, value] of Object.entries(resolved)) {
+      if (typeof value === "string") {
+        params.set(key, value);
       }
-      window.location.href = data.redirectUrl;
-    } catch {
-      setError("Network error");
-      setLoading(false);
     }
+
+    const request = parseAuthorizeRequest(params);
+    await validateOAuthClientRequest(request, {
+      expectedResource: getMcpResourceUrl(),
+    });
+
+    return (
+      <AuthorizeForm
+        clientId={request.clientId}
+        redirectUri={request.redirectUri}
+        codeChallenge={request.codeChallenge}
+        resource={request.resource}
+        state={request.state}
+      />
+    );
+  } catch (error) {
+    return (
+      <div style={{ maxWidth: 480, margin: "80px auto", fontFamily: "system-ui" }}>
+        <h1>Invalid OAuth request</h1>
+        <p>{error instanceof Error ? error.message : "Request validation failed"}</p>
+      </div>
+    );
   }
-
-  return (
-    <div style={{ maxWidth: 400, margin: "80px auto", fontFamily: "system-ui" }}>
-      <h1>NYCU AI Office</h1>
-      <p>Sign in to authorize MCP access</p>
-      {clientId && <p style={{ color: "#666", fontSize: 14 }}>Client: {clientId}</p>}
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="email">Email</label>
-          <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ display: "block", width: "100%", padding: 8, marginTop: 4 }} />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="password">Password</label>
-          <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ display: "block", width: "100%", padding: 8, marginTop: 4 }} />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ padding: "8px 24px" }}>
-          {loading ? "Signing in..." : "Authorize"}
-        </button>
-      </form>
-    </div>
-  );
-}
-
-export default function AuthorizePage() {
-  return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <AuthorizeForm />
-    </Suspense>
-  );
 }

@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { exchangeAuthCode } from "@/lib/auth/auth-codes";
 import { verifyPkce } from "@/lib/auth/pkce";
+import {
+  parseTokenAuthorizationCodeRequest,
+  validateOAuthClientRequest,
+} from "@/lib/auth/oauth-request";
+import { getMcpResourceUrl } from "@/lib/auth/urls";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -19,23 +24,22 @@ export async function POST(request: Request) {
 }
 
 async function handleAuthorizationCode(body: FormData) {
-  const code = body.get("code") as string;
-  const codeVerifier = body.get("code_verifier") as string;
+  let request: ReturnType<typeof parseTokenAuthorizationCodeRequest>;
 
-  if (!code || !codeVerifier) {
+  try {
+    request = parseTokenAuthorizationCodeRequest(body);
+  } catch (error) {
     return Response.json(
       {
         error: "invalid_request",
-        error_description: "Missing code or code_verifier",
+        error_description:
+          error instanceof Error ? error.message : "Missing code or code_verifier",
       },
       { status: 400 }
     );
   }
 
-  const redirectUri = body.get("redirect_uri") as string;
-  const clientId = body.get("client_id") as string;
-
-  const stored = await exchangeAuthCode(code);
+  const stored = await exchangeAuthCode(request.code);
   if (!stored) {
     return Response.json(
       {
@@ -46,7 +50,7 @@ async function handleAuthorizationCode(body: FormData) {
     );
   }
 
-  if (redirectUri && redirectUri !== stored.redirectUri) {
+  if (request.redirectUri !== stored.redirectUri) {
     return Response.json(
       {
         error: "invalid_grant",
@@ -56,7 +60,7 @@ async function handleAuthorizationCode(body: FormData) {
     );
   }
 
-  if (clientId && clientId !== stored.clientId) {
+  if (request.clientId !== stored.clientId) {
     return Response.json(
       {
         error: "invalid_grant",
@@ -66,7 +70,38 @@ async function handleAuthorizationCode(body: FormData) {
     );
   }
 
-  if (!verifyPkce(codeVerifier, stored.codeChallenge)) {
+  if (request.resource && stored.resource && request.resource !== stored.resource) {
+    return Response.json(
+      {
+        error: "invalid_grant",
+        error_description: "resource mismatch",
+      },
+      { status: 400 }
+    );
+  }
+
+  try {
+    await validateOAuthClientRequest(
+      {
+        clientId: request.clientId,
+        redirectUri: request.redirectUri,
+        resource: request.resource,
+      },
+      {
+        expectedResource: getMcpResourceUrl(),
+      },
+    );
+  } catch (error) {
+    return Response.json(
+      {
+        error: "invalid_grant",
+        error_description: error instanceof Error ? error.message : "Client validation failed",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (!verifyPkce(request.codeVerifier, stored.codeChallenge)) {
     return Response.json(
       {
         error: "invalid_grant",
@@ -80,7 +115,7 @@ async function handleAuthorizationCode(body: FormData) {
     access_token: stored.accessToken,
     refresh_token: stored.refreshToken,
     token_type: "Bearer",
-    expires_in: 3600,
+    expires_in: stored.expiresIn,
   });
 }
 
@@ -116,6 +151,6 @@ async function handleRefreshToken(body: FormData) {
     access_token: data.session.access_token,
     refresh_token: data.session.refresh_token,
     token_type: "Bearer",
-    expires_in: 3600,
+    expires_in: data.session.expires_in ?? null,
   });
 }

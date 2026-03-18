@@ -7,7 +7,7 @@ The repository is intentionally small and server-oriented: Next.js route handler
 ## What This Project Does
 
 - exposes a bearer-token protected MCP endpoint at `/mcp`
-- supports OAuth-style client registration, authorization, and token exchange
+- supports OAuth-style client registration, authorization, token exchange, and metadata discovery
 - provides MCP tools for managing AI Office content stored in Supabase
 - supports image uploads through direct URL ingestion and one-time upload URLs for local files
 
@@ -43,15 +43,22 @@ lib/
 - the route validates the Supabase user from the bearer token
 - on success, it builds an MCP server via `lib/mcp/server.ts`
 - the server uses Streamable HTTP transport and runs statelessly
+- `401` responses include a `WWW-Authenticate` challenge pointing clients to protected resource metadata
+
+### OAuth discovery
+
+- `GET /.well-known/oauth-authorization-server` publishes authorization server metadata
+- `GET /.well-known/oauth-protected-resource/mcp` publishes protected resource metadata for the `/mcp` endpoint
 
 ### OAuth flow
 
 The repo includes a lightweight OAuth-compatible flow:
 
-- `POST /oauth/register` issues a generated `client_id`
-- `GET /oauth/authorize` renders the sign-in and authorization page
+- `POST /oauth/register` issues and stores a generated `client_id`
+- `GET /oauth/authorize` validates the client request and renders the sign-in and authorization page
 - `POST /oauth/callback` signs the user in with Supabase and creates an authorization code
 - `POST /oauth/token` exchanges the authorization code plus PKCE verifier for access and refresh tokens, and also supports refresh-token grant
+- authorization requests support PKCE `S256` and the MCP `resource` indicator for `/mcp`
 
 ### Upload flow
 
@@ -143,6 +150,7 @@ Notes:
 ## Auth Expectations
 
 - `/mcp` rejects requests without a valid bearer token
+- OAuth discovery metadata is available through the `/.well-known/*` routes
 - upload tokens are one-time use and intended only for the upload flow
 - PKCE verification is required for authorization-code exchange
 - access tokens and refresh tokens originate from Supabase auth sessions
