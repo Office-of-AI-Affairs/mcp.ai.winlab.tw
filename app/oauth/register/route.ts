@@ -1,19 +1,27 @@
-import { randomUUID } from "node:crypto";
+import { ZodError } from "zod";
+import { registerOAuthClient } from "@/lib/auth/oauth-clients";
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  try {
+    const client = await registerOAuthClient(await request.json());
+    return Response.json(client, { status: 201 });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return Response.json(
+        {
+          error: "invalid_client_metadata",
+          error_description: error.issues.map((issue) => issue.message).join(", "),
+        },
+        { status: 400 },
+      );
+    }
 
-  const clientId = randomUUID();
-
-  return Response.json(
-    {
-      client_id: clientId,
-      client_name: body.client_name || "MCP Client",
-      redirect_uris: body.redirect_uris || [],
-      grant_types: body.grant_types || ["authorization_code", "refresh_token"],
-      response_types: body.response_types || ["code"],
-      token_endpoint_auth_method: "none",
-    },
-    { status: 201 }
-  );
+    return Response.json(
+      {
+        error: "server_error",
+        error_description: error instanceof Error ? error.message : "Failed to register client",
+      },
+      { status: 500 },
+    );
+  }
 }

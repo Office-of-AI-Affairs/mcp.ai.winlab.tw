@@ -7,9 +7,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export interface StoredAuthData {
   accessToken: string;
   refreshToken: string;
+  expiresIn: number | null;
   codeChallenge: string;
   redirectUri: string;
   clientId: string;
+  resource?: string;
 }
 
 export async function createAuthCode(data: StoredAuthData): Promise<string> {

@@ -1,5 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "@/lib/mcp/server";
+import { getProtectedResourceMetadataUrl } from "@/lib/auth/urls";
 import { createClientWithToken } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,12 @@ export async function POST(request: Request) {
   if (!token) {
     return Response.json(
       { error: "Missing Authorization header" },
-      { status: 401 }
+      {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": `Bearer resource_metadata="${getProtectedResourceMetadataUrl()}"`,
+        },
+      }
     );
   }
 
@@ -24,7 +30,12 @@ export async function POST(request: Request) {
   if (error || !user) {
     return Response.json(
       { error: "Invalid or expired token" },
-      { status: 401 }
+      {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": `Bearer resource_metadata="${getProtectedResourceMetadataUrl()}"`,
+        },
+      }
     );
   }
 

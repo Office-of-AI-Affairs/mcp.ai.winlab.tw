@@ -1,6 +1,6 @@
 import { getOAuthMetadata } from "@/lib/auth/oauth-metadata";
+import { getBaseUrl } from "@/lib/auth/urls";
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  return Response.json(getOAuthMetadata(baseUrl));
+  return Response.json(getOAuthMetadata(getBaseUrl()));
 }
