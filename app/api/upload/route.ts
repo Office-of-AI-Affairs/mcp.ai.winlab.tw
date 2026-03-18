@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createClientWithToken } from "@/lib/supabase/server";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 
 const BUCKET = "announcement-images";
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
@@ -28,7 +26,7 @@ async function authenticateRequest(request: Request) {
 
   // Method 1: One-time upload token (from MCP create_upload_url tool)
   if (uploadToken) {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createClient(supabaseUrl, supabasePublishableKey);
     const { data: row, error } = await supabase
       .from("upload_tokens")
       .select("user_id, category, expires_at, used, access_token")

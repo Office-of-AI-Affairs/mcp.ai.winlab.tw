@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 
 export interface StoredAuthData {
   accessToken: string;
@@ -16,7 +14,7 @@ export interface StoredAuthData {
 
 export async function createAuthCode(data: StoredAuthData): Promise<string> {
   const code = randomBytes(32).toString("hex");
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabasePublishableKey);
 
   const { error } = await supabase.from("oauth_auth_codes").insert({
     code,
@@ -30,7 +28,7 @@ export async function createAuthCode(data: StoredAuthData): Promise<string> {
 export async function exchangeAuthCode(
   code: string
 ): Promise<StoredAuthData | null> {
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabasePublishableKey);
 
   const { data: row, error } = await supabase
     .from("oauth_auth_codes")

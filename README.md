@@ -137,13 +137,15 @@ Set these variables before running the server:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_BASE_URL=
 ```
 
 Notes:
 
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the preferred public key for new deployments
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` is still accepted as a backward-compatible fallback
 - `NEXT_PUBLIC_BASE_URL` is used when generating one-time upload URLs
 - Supabase auth, database access, and storage all depend on the configured project
 
