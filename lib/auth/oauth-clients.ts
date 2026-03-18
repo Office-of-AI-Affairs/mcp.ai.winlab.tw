@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { createServiceClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 
 const oauthClientSchema = z.object({
   client_id: z.string(),
@@ -75,7 +75,7 @@ export async function getRedirectUriMatch(
 function createDatabaseOAuthClientStore(): OAuthClientStore {
   return {
     async insert(row) {
-      const supabase = createServiceClient();
+      const supabase = createClient();
       const { error } = await supabase.from("oauth_clients").insert({
         client_id: row.client_id,
         client_name: row.client_name,
@@ -89,7 +89,7 @@ function createDatabaseOAuthClientStore(): OAuthClientStore {
       }
     },
     async selectById(clientId) {
-      const supabase = createServiceClient();
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("oauth_clients")
         .select("client_id, client_name, redirect_uris, grant_types, response_types, created_at")
