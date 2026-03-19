@@ -20,6 +20,28 @@ const CATEGORY_PREFIXES: Record<string, string> = {
   organization: "organization/",
 };
 
+interface UploadTokenRpcClient {
+  rpc(functionName: "consume_upload_token", args: { p_token: string }): PromiseLike<{
+    data: { user_id: string; category: string; access_token: string | null } | null;
+    error: { message: string } | null;
+  }>;
+}
+
+export async function consumeUploadToken(
+  token: string,
+  client: UploadTokenRpcClient
+) {
+  const { data, error } = await client.rpc("consume_upload_token", {
+    p_token: token,
+  });
+
+  if (error) {
+    throw new Error(`Failed to consume upload token: ${error.message}`);
+  }
+
+  return data;
+}
+
 async function authenticateRequest(request: Request) {
   const url = new URL(request.url);
   const uploadToken = url.searchParams.get("token");
@@ -27,19 +49,10 @@ async function authenticateRequest(request: Request) {
   // Method 1: One-time upload token (from MCP create_upload_url tool)
   if (uploadToken) {
     const supabase = createClient(supabaseUrl, supabasePublishableKey);
-    const { data: row, error } = await supabase
-      .from("upload_tokens")
-      .select("user_id, category, expires_at, used, access_token")
-      .eq("token", uploadToken)
-      .single();
+    const row = await consumeUploadToken(uploadToken, supabase);
 
-    if (error || !row) return { error: "Invalid upload token" };
-    if (row.used) return { error: "Upload token already used" };
-    if (new Date(row.expires_at) < new Date()) return { error: "Upload token expired" };
+    if (!row) return { error: "Invalid, expired, or already used upload token" };
     if (!row.access_token) return { error: "Upload token missing credentials" };
-
-    // Mark as used
-    await supabase.from("upload_tokens").update({ used: true }).eq("token", uploadToken);
 
     // Use the stored access token to create an authenticated client
     return {
