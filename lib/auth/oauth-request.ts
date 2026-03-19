@@ -34,11 +34,11 @@ export function parseAuthorizeRequest(searchParams: URLSearchParams) {
 
 export function parseTokenAuthorizationCodeRequest(formData: FormData) {
   const parsed = tokenAuthorizationCodeSchema.parse({
-    code: formData.get("code"),
-    code_verifier: formData.get("code_verifier"),
-    client_id: formData.get("client_id"),
-    redirect_uri: formData.get("redirect_uri"),
-    resource: formData.get("resource"),
+    code: getStringField(formData, "code"),
+    code_verifier: getStringField(formData, "code_verifier"),
+    client_id: getStringField(formData, "client_id"),
+    redirect_uri: getStringField(formData, "redirect_uri"),
+    resource: getStringField(formData, "resource"),
   });
 
   return {
@@ -48,6 +48,11 @@ export function parseTokenAuthorizationCodeRequest(formData: FormData) {
     redirectUri: parsed.redirect_uri,
     resource: parsed.resource,
   };
+}
+
+function getStringField(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : undefined;
 }
 
 export async function validateOAuthClientRequest(

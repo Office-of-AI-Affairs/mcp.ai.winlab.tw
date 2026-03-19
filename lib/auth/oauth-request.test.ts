@@ -73,6 +73,23 @@ describe("parseTokenAuthorizationCodeRequest", () => {
 
     assert.throws(() => parseTokenAuthorizationCodeRequest(form));
   });
+
+  test("accepts authorization code exchange when resource is omitted", () => {
+    const form = new FormData();
+    form.set("grant_type", "authorization_code");
+    form.set("code", "code-123");
+    form.set("code_verifier", "verifier-123");
+    form.set("client_id", "client-123");
+    form.set("redirect_uri", "http://127.0.0.1:4000/callback");
+
+    assert.deepStrictEqual(parseTokenAuthorizationCodeRequest(form), {
+      code: "code-123",
+      codeVerifier: "verifier-123",
+      clientId: "client-123",
+      redirectUri: "http://127.0.0.1:4000/callback",
+      resource: undefined,
+    });
+  });
 });
 
 describe("validateOAuthClientRequest", () => {
