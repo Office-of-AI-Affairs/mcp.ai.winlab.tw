@@ -2,6 +2,11 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import {
+  normalizeApplicationMethod,
+  resolveRecruitmentLink,
+} from "@/lib/recruitment-links";
+
 function success(data: unknown) {
   return {
     content: [
@@ -36,9 +41,15 @@ const positionSchema = z.object({
   nice_to_have: z.string().optional(),
 });
 
+const applicationMethodLinkSchema = z.object({
+  label: z.string(),
+  url: z.string(),
+});
+
 const applicationMethodSchema = z.object({
   email: z.string().optional(),
   url: z.string().optional(),
+  links: z.array(applicationMethodLinkSchema).optional(),
   other: z.string().optional(),
 });
 
@@ -111,7 +122,7 @@ export function registerRecruitmentTools(
     "create_recruitment",
     {
       title: z.string(),
-      link: z.string(),
+      link: z.string().optional(),
       image: z.string().optional(),
       company_description: z.string().optional(),
       start_date: z.string(),
@@ -135,17 +146,20 @@ export function registerRecruitmentTools(
       required_documents,
       event_id,
     }) => {
+      const normalizedApplicationMethod =
+        normalizeApplicationMethod(application_method) ?? null;
+
       const { data, error: dbError } = await supabase
         .from("competitions")
         .insert({
           title,
-          link,
+          link: resolveRecruitmentLink(link, normalizedApplicationMethod),
           image: image ?? null,
           company_description: company_description ?? null,
           start_date,
           end_date: end_date ?? null,
           positions: positions ?? null,
-          application_method: application_method ?? null,
+          application_method: normalizedApplicationMethod,
           contact: contact ?? null,
           required_documents: required_documents ?? null,
           event_id: event_id ?? null,
@@ -193,9 +207,12 @@ export function registerRecruitmentTools(
       event_id,
     }) => {
       const updates: Record<string, unknown> = {};
+      const normalizedApplicationMethod =
+        application_method !== undefined
+          ? normalizeApplicationMethod(application_method)
+          : undefined;
 
       if (title !== undefined) updates.title = title;
-      if (link !== undefined) updates.link = link;
       if (image !== undefined) updates.image = image;
       if (company_description !== undefined)
         updates.company_description = company_description;
@@ -203,7 +220,10 @@ export function registerRecruitmentTools(
       if (end_date !== undefined) updates.end_date = end_date;
       if (positions !== undefined) updates.positions = positions;
       if (application_method !== undefined)
-        updates.application_method = application_method;
+        updates.application_method = normalizedApplicationMethod;
+      if (link !== undefined || normalizedApplicationMethod !== undefined) {
+        updates.link = resolveRecruitmentLink(link, normalizedApplicationMethod ?? null);
+      }
       if (contact !== undefined) updates.contact = contact;
       if (required_documents !== undefined)
         updates.required_documents = required_documents;
