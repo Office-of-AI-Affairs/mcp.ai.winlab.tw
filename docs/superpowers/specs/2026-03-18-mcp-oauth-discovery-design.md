@@ -8,11 +8,11 @@ Make `mcp.ai.winlab.tw` behave like a standards-aligned remote MCP server that s
 
 The project already has the core pieces of an OAuth bridge:
 
-- [`/mcp`](/Users/loki/mcp-ai/app/mcp/route.ts) accepts `Authorization: Bearer <token>` and validates the Supabase user.
-- [`/oauth/register`](/Users/loki/mcp-ai/app/oauth/register/route.ts) issues a generated `client_id`.
-- [`/oauth/authorize`](/Users/loki/mcp-ai/app/oauth/authorize/page.tsx) renders a login page.
-- [`/oauth/callback`](/Users/loki/mcp-ai/app/oauth/callback/route.ts) signs the user in and creates an authorization code.
-- [`/oauth/token`](/Users/loki/mcp-ai/app/oauth/token/route.ts) exchanges the code plus PKCE verifier for access and refresh tokens.
+- [`/mcp`](/Users/loki/mcp.ai.winlab.tw/app/mcp/route.ts) accepts `Authorization: Bearer <token>` and validates the Supabase user.
+- [`/oauth/register`](/Users/loki/mcp.ai.winlab.tw/app/oauth/register/route.ts) issues a generated `client_id`.
+- [`/oauth/authorize`](/Users/loki/mcp.ai.winlab.tw/app/oauth/authorize/page.tsx) renders a login page.
+- [`/oauth/callback`](/Users/loki/mcp.ai.winlab.tw/app/oauth/callback/route.ts) signs the user in and creates an authorization code.
+- [`/oauth/token`](/Users/loki/mcp.ai.winlab.tw/app/oauth/token/route.ts) exchanges the code plus PKCE verifier for access and refresh tokens.
 
 What is missing is the discovery and contract layer that lets an MCP client find and trust those endpoints automatically.
 
@@ -53,7 +53,7 @@ Responsibilities:
 
 ### 2. Authorization server metadata
 
-Add a well-known route for authorization server metadata. It will reuse a shared metadata builder from [`lib/auth/oauth-metadata.ts`](/Users/loki/mcp-ai/lib/auth/oauth-metadata.ts).
+Add a well-known route for authorization server metadata. It will reuse a shared metadata builder from [`lib/auth/oauth-metadata.ts`](/Users/loki/mcp.ai.winlab.tw/lib/auth/oauth-metadata.ts).
 
 Responsibilities:
 
@@ -68,7 +68,7 @@ Responsibilities:
 
 ### 3. Dynamic client registration
 
-Keep [`/oauth/register`](/Users/loki/mcp-ai/app/oauth/register/route.ts) but change it from a stateless echo into a minimally persistent registration endpoint.
+Keep [`/oauth/register`](/Users/loki/mcp.ai.winlab.tw/app/oauth/register/route.ts) but change it from a stateless echo into a minimally persistent registration endpoint.
 
 Responsibilities:
 
@@ -88,7 +88,7 @@ Minimum stored fields:
 
 ### 4. Authorization endpoint
 
-Keep [`/oauth/authorize`](/Users/loki/mcp-ai/app/oauth/authorize/page.tsx) as the browser entry point, but move OAuth request validation into a shared server helper before rendering the login UI.
+Keep [`/oauth/authorize`](/Users/loki/mcp.ai.winlab.tw/app/oauth/authorize/page.tsx) as the browser entry point, but move OAuth request validation into a shared server helper before rendering the login UI.
 
 Responsibilities:
 
@@ -103,7 +103,7 @@ For invalid requests, return a clear OAuth-style error page instead of rendering
 
 ### 5. Authorization callback
 
-Keep [`/oauth/callback`](/Users/loki/mcp-ai/app/oauth/callback/route.ts) as the Supabase login completion step.
+Keep [`/oauth/callback`](/Users/loki/mcp.ai.winlab.tw/app/oauth/callback/route.ts) as the Supabase login completion step.
 
 Responsibilities:
 
@@ -115,7 +115,7 @@ Responsibilities:
 
 ### 6. Token endpoint
 
-Keep [`/oauth/token`](/Users/loki/mcp-ai/app/oauth/token/route.ts) as the code exchange and refresh endpoint.
+Keep [`/oauth/token`](/Users/loki/mcp.ai.winlab.tw/app/oauth/token/route.ts) as the code exchange and refresh endpoint.
 
 Responsibilities:
 
@@ -132,7 +132,7 @@ The token response will continue to expose Supabase `access_token` and `refresh_
 
 ### Existing table: `oauth_auth_codes`
 
-Keep using [`lib/auth/auth-codes.ts`](/Users/loki/mcp-ai/lib/auth/auth-codes.ts) and the `oauth_auth_codes` table for short-lived authorization codes.
+Keep using [`lib/auth/auth-codes.ts`](/Users/loki/mcp.ai.winlab.tw/lib/auth/auth-codes.ts) and the `oauth_auth_codes` table for short-lived authorization codes.
 
 Required properties:
 
@@ -213,15 +213,15 @@ The repo exposes OAuth endpoints but does not currently expose the well-known di
 
 ### 2. Client registration is too weak
 
-[`app/oauth/register/route.ts`](/Users/loki/mcp-ai/app/oauth/register/route.ts) generates a `client_id` but does not persist the registered client. That means later `client_id` and `redirect_uri` checks cannot be grounded in durable client metadata.
+[`app/oauth/register/route.ts`](/Users/loki/mcp.ai.winlab.tw/app/oauth/register/route.ts) generates a `client_id` but does not persist the registered client. That means later `client_id` and `redirect_uri` checks cannot be grounded in durable client metadata.
 
 ### 3. Token lifetime reporting is unreliable
 
-[`app/oauth/token/route.ts`](/Users/loki/mcp-ai/app/oauth/token/route.ts) currently returns `expires_in: 3600` as a fixed value. That may not match the actual Supabase project configuration and can mislead clients.
+[`app/oauth/token/route.ts`](/Users/loki/mcp.ai.winlab.tw/app/oauth/token/route.ts) currently returns `expires_in: 3600` as a fixed value. That may not match the actual Supabase project configuration and can mislead clients.
 
 ### 4. Authorization request validation is too thin
 
-[`app/oauth/authorize/page.tsx`](/Users/loki/mcp-ai/app/oauth/authorize/page.tsx) checks only a subset of required request parameters in the client component. Request validation should happen server-side and should include registered client checks.
+[`app/oauth/authorize/page.tsx`](/Users/loki/mcp.ai.winlab.tw/app/oauth/authorize/page.tsx) checks only a subset of required request parameters in the client component. Request validation should happen server-side and should include registered client checks.
 
 ### 5. Error contracts are inconsistent
 

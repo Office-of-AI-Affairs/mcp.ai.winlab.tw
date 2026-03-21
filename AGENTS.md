@@ -55,6 +55,7 @@ NEXT_PUBLIC_BASE_URL=
 - Validate all external input at the boundary, and return explicit JSON error responses for invalid auth, invalid payloads, and upstream Supabase failures.
 - Keep `AGENTS.md`, `rules/*.md`, and `README.md` aligned when project capabilities or operating assumptions change.
 - Follow `rules/git.md` for topic-based commits and push behavior.
+- This repo depends on the sibling app repo at `~/ai` for shared product schema assumptions. When `~/ai` changes Supabase tables, RLS, shared content models, or admin workflows, verify whether MCP tools and `lib/supabase/types.ts` here also need updates.
 
 ## Maintenance Note
 

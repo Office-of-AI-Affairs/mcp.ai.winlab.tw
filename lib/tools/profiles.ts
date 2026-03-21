@@ -2,6 +2,9 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { composeProfile } from "@/lib/profile-records";
+import type { Profile, PublicProfile } from "@/lib/supabase/types";
+
 function success(data: unknown) {
   return {
     content: [
@@ -32,15 +35,31 @@ export function registerProfileTools(
 ) {
   // --- get_my_profile ---
   server.tool("get_my_profile", {}, async () => {
-    const { data, error: dbError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    const [publicRes, privateRes] = await Promise.all([
+      supabase
+        .from("public_profiles")
+        .select("id, created_at, updated_at, display_name")
+        .eq("id", userId)
+        .single(),
+      supabase
+        .from("profiles")
+        .select("id, created_at, updated_at, display_name, avatar_url, role, bio, phone, linkedin, facebook, github, website, resume, social_links")
+        .eq("id", userId)
+        .single(),
+    ]);
 
-    if (dbError) {
-      return error(dbError.message);
+    if (publicRes.error) {
+      return error(publicRes.error.message);
     }
+
+    if (privateRes.error) {
+      return error(privateRes.error.message);
+    }
+
+    const data = composeProfile(
+      publicRes.data as PublicProfile,
+      privateRes.data as Profile
+    );
 
     return success(data);
   });
@@ -58,32 +77,70 @@ export function registerProfileTools(
       facebook: z.string().optional(),
     },
     async ({ display_name, bio, phone, linkedin, github, website, facebook }) => {
-      const updates: Record<string, unknown> = {};
+      const publicUpdates: Record<string, unknown> = {};
+      const privateUpdates: Record<string, unknown> = {};
 
-      if (display_name !== undefined) updates.display_name = display_name;
-      if (bio !== undefined) updates.bio = bio;
-      if (phone !== undefined) updates.phone = phone;
-      if (linkedin !== undefined) updates.linkedin = linkedin;
-      if (github !== undefined) updates.github = github;
-      if (website !== undefined) updates.website = website;
-      if (facebook !== undefined) updates.facebook = facebook;
+      if (display_name !== undefined) {
+        publicUpdates.display_name = display_name;
+        privateUpdates.display_name = display_name;
+      }
+      if (bio !== undefined) privateUpdates.bio = bio;
+      if (phone !== undefined) privateUpdates.phone = phone;
+      if (linkedin !== undefined) privateUpdates.linkedin = linkedin;
+      if (github !== undefined) privateUpdates.github = github;
+      if (website !== undefined) privateUpdates.website = website;
+      if (facebook !== undefined) privateUpdates.facebook = facebook;
 
-      if (Object.keys(updates).length === 0) {
+      if (Object.keys(publicUpdates).length === 0 && Object.keys(privateUpdates).length === 0) {
         return error("No fields to update");
       }
 
-      const { data, error: dbError } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", userId)
-        .select()
-        .single();
+      if (Object.keys(publicUpdates).length > 0) {
+        const { error: publicError } = await supabase
+          .from("public_profiles")
+          .update(publicUpdates)
+          .eq("id", userId);
 
-      if (dbError) {
-        return error(dbError.message);
+        if (publicError) {
+          return error(publicError.message);
+        }
       }
 
-      return success(data);
+      if (Object.keys(privateUpdates).length > 0) {
+        const { error: privateError } = await supabase
+          .from("profiles")
+          .update(privateUpdates)
+          .eq("id", userId);
+
+        if (privateError) {
+          return error(privateError.message);
+        }
+      }
+
+      const [publicRes, privateRes] = await Promise.all([
+        supabase
+          .from("public_profiles")
+          .select("id, created_at, updated_at, display_name")
+          .eq("id", userId)
+          .single(),
+        supabase
+          .from("profiles")
+          .select("id, created_at, updated_at, display_name, avatar_url, role, bio, phone, linkedin, facebook, github, website, resume, social_links")
+          .eq("id", userId)
+          .single(),
+      ]);
+
+      if (publicRes.error) {
+        return error(publicRes.error.message);
+      }
+
+      if (privateRes.error) {
+        return error(privateRes.error.message);
+      }
+
+      return success(
+        composeProfile(publicRes.data as PublicProfile, privateRes.data as Profile)
+      );
     }
   );
 
@@ -98,7 +155,7 @@ export function registerProfileTools(
     async ({ role, limit, offset }) => {
       let query = supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, role, created_at")
+        .select("id, role, created_at")
         .order("created_at", { ascending: false })
         .range(offset ?? 0, (offset ?? 0) + (limit ?? 20) - 1);
 
@@ -112,7 +169,34 @@ export function registerProfileTools(
         return error(dbError.message);
       }
 
-      return success(data);
+      const rows = (data as { id: string; role: "admin" | "user"; created_at: string }[] | null) ?? [];
+
+      if (rows.length === 0) {
+        return success([]);
+      }
+
+      const { data: publicProfiles, error: publicError } = await supabase
+        .from("public_profiles")
+        .select("id, display_name")
+        .in("id", rows.map((row) => row.id));
+
+      if (publicError) {
+        return error(publicError.message);
+      }
+
+      const publicMap = new Map(
+        ((publicProfiles as PublicProfile[] | null) ?? []).map((row) => [row.id, row])
+      );
+
+      return success(
+        rows.map((row) => ({
+          id: row.id,
+          display_name: publicMap.get(row.id)?.display_name ?? null,
+          avatar_url: null,
+          role: row.role,
+          created_at: row.created_at,
+        }))
+      );
     }
   );
 }

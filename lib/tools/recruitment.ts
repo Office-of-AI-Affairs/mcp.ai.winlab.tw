@@ -2,10 +2,15 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import { composeRecruitment } from "@/lib/recruitment-records";
 import {
   normalizeApplicationMethod,
   resolveRecruitmentLink,
 } from "@/lib/recruitment-links";
+import type {
+  RecruitmentPrivateDetails,
+  RecruitmentSummary,
+} from "@/lib/supabase/types";
 
 function success(data: unknown) {
   return {
@@ -75,7 +80,7 @@ export function registerRecruitmentTools(
       let query = supabase
         .from("competitions")
         .select(
-          "id, title, link, image, start_date, end_date, event_id, created_at"
+          "id, created_at, updated_at, title, link, image, company_description, start_date, end_date, event_id"
         )
         .order("created_at", { ascending: false })
         .range(offset ?? 0, (offset ?? 0) + (limit ?? 20) - 1);
@@ -103,9 +108,9 @@ export function registerRecruitmentTools(
       id: z.string().uuid(),
     },
     async ({ id }) => {
-      const { data, error: dbError } = await supabase
+      const { data: summary, error: dbError } = await supabase
         .from("competitions")
-        .select("*")
+        .select("id, created_at, updated_at, title, link, image, company_description, start_date, end_date, event_id")
         .eq("id", id)
         .single();
 
@@ -113,7 +118,22 @@ export function registerRecruitmentTools(
         return error(dbError.message);
       }
 
-      return success(data);
+      const { data: details, error: detailError } = await supabase
+        .from("competition_private_details")
+        .select("competition_id, created_at, updated_at, positions, application_method, contact, required_documents")
+        .eq("competition_id", id)
+        .maybeSingle();
+
+      if (detailError) {
+        return error(detailError.message);
+      }
+
+      return success(
+        composeRecruitment(
+          summary as RecruitmentSummary,
+          (details as RecruitmentPrivateDetails | null) ?? null
+        )
+      );
     }
   );
 
@@ -158,20 +178,44 @@ export function registerRecruitmentTools(
           company_description: company_description ?? null,
           start_date,
           end_date: end_date ?? null,
-          positions: positions ?? null,
-          application_method: normalizedApplicationMethod,
-          contact: contact ?? null,
-          required_documents: required_documents ?? null,
           event_id: event_id ?? null,
         })
-        .select()
+        .select("id, created_at, updated_at, title, link, image, company_description, start_date, end_date, event_id")
         .single();
 
       if (dbError) {
         return error(dbError.message);
       }
 
-      return success(data);
+      const hasPrivateDetails = Boolean(
+        positions?.length ||
+        normalizedApplicationMethod ||
+        contact ||
+        required_documents
+      );
+
+      let details: RecruitmentPrivateDetails | null = null;
+      if (hasPrivateDetails) {
+        const { data: privateData, error: privateError } = await supabase
+          .from("competition_private_details")
+          .insert({
+            competition_id: data.id,
+            positions: positions ?? null,
+            application_method: normalizedApplicationMethod,
+            contact: contact ?? null,
+            required_documents: required_documents ?? null,
+          })
+          .select("competition_id, created_at, updated_at, positions, application_method, contact, required_documents")
+          .single();
+
+        if (privateError) {
+          return error(privateError.message);
+        }
+
+        details = privateData as RecruitmentPrivateDetails;
+      }
+
+      return success(composeRecruitment(data as RecruitmentSummary, details));
     }
   );
 
@@ -218,33 +262,81 @@ export function registerRecruitmentTools(
         updates.company_description = company_description;
       if (start_date !== undefined) updates.start_date = start_date;
       if (end_date !== undefined) updates.end_date = end_date;
-      if (positions !== undefined) updates.positions = positions;
+      const privateUpdates: Record<string, unknown> = {};
+      if (positions !== undefined) privateUpdates.positions = positions;
       if (application_method !== undefined)
-        updates.application_method = normalizedApplicationMethod;
+        privateUpdates.application_method = normalizedApplicationMethod;
       if (link !== undefined || normalizedApplicationMethod !== undefined) {
         updates.link = resolveRecruitmentLink(link, normalizedApplicationMethod ?? null);
       }
-      if (contact !== undefined) updates.contact = contact;
+      if (contact !== undefined) privateUpdates.contact = contact;
       if (required_documents !== undefined)
-        updates.required_documents = required_documents;
+        privateUpdates.required_documents = required_documents;
       if (event_id !== undefined) updates.event_id = event_id;
 
-      if (Object.keys(updates).length === 0) {
+      if (Object.keys(updates).length === 0 && Object.keys(privateUpdates).length === 0) {
         return error("No fields to update");
       }
 
-      const { data, error: dbError } = await supabase
-        .from("competitions")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
+      let data: RecruitmentSummary | null = null;
+      if (Object.keys(updates).length > 0) {
+        const { data: publicData, error: dbError } = await supabase
+          .from("competitions")
+          .update(updates)
+          .eq("id", id)
+          .select("id, created_at, updated_at, title, link, image, company_description, start_date, end_date, event_id")
+          .single();
 
-      if (dbError) {
-        return error(dbError.message);
+        if (dbError) {
+          return error(dbError.message);
+        }
+
+        data = publicData as RecruitmentSummary;
+      } else {
+        const { data: currentData, error: currentError } = await supabase
+          .from("competitions")
+          .select("id, created_at, updated_at, title, link, image, company_description, start_date, end_date, event_id")
+          .eq("id", id)
+          .single();
+
+        if (currentError) {
+          return error(currentError.message);
+        }
+
+        data = currentData as RecruitmentSummary;
       }
 
-      return success(data);
+      let details: RecruitmentPrivateDetails | null = null;
+      if (Object.keys(privateUpdates).length > 0) {
+        const { data: privateData, error: privateError } = await supabase
+          .from("competition_private_details")
+          .upsert({
+            competition_id: id,
+            ...privateUpdates,
+          })
+          .select("competition_id, created_at, updated_at, positions, application_method, contact, required_documents")
+          .single();
+
+        if (privateError) {
+          return error(privateError.message);
+        }
+
+        details = privateData as RecruitmentPrivateDetails;
+      } else {
+        const { data: privateData, error: privateError } = await supabase
+          .from("competition_private_details")
+          .select("competition_id, created_at, updated_at, positions, application_method, contact, required_documents")
+          .eq("competition_id", id)
+          .maybeSingle();
+
+        if (privateError) {
+          return error(privateError.message);
+        }
+
+        details = (privateData as RecruitmentPrivateDetails | null) ?? null;
+      }
+
+      return success(composeRecruitment(data, details));
     }
   );
 }
