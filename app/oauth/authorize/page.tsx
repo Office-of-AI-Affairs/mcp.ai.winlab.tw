@@ -1,4 +1,5 @@
 import { AuthorizeForm } from "@/app/oauth/authorize/authorize-form";
+import { AuthShell } from "@/components/auth-shell";
 import { parseAuthorizeRequest, validateOAuthClientRequest } from "@/lib/auth/oauth-request";
 import { getMcpResourceUrl } from "@/lib/auth/urls";
 
@@ -11,10 +12,16 @@ export default async function AuthorizePage({ searchParams }: AuthorizePageProps
 
   if ("error" in result) {
     return (
-      <div style={{ maxWidth: 480, margin: "80px auto", fontFamily: "system-ui" }}>
-        <h1>Invalid OAuth request</h1>
-        <p>{result.error}</p>
-      </div>
+      <AuthShell
+        eyebrow="AI WINLAB MCP"
+        title="授權請求無效"
+        description="這次 OAuth 登入請求缺少必要參數，或 client 設定和註冊資訊不一致。"
+        footer={<p className="auth-note">請回到發起登入的工具重新執行授權流程。</p>}
+      >
+        <div className="auth-error" role="alert">
+          {result.error}
+        </div>
+      </AuthShell>
     );
   }
 
