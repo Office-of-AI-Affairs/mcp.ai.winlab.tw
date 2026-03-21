@@ -251,7 +251,7 @@ Likely code units:
 
 The work is successful when:
 
-- `codex mcp login mcp-ai-winlab` can discover the auth flow and open a browser login
+- the configured Codex MCP alias can discover the auth flow and open a browser login
 - the login flow completes without manually supplying a bearer token
 - `/mcp` still accepts the resulting bearer token and authenticates the user
 - the OAuth bridge is materially closer to MCP and OAuth expectations than the current implementation

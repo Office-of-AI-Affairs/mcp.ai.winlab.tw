@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "mcp-ai-winlab",
+      "name": "mcp.ai.winlab.tw",
       "dependencies": {
         "@modelcontextprotocol/sdk": "latest",
         "@supabase/supabase-js": "^2.91.0",
