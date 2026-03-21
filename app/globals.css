@@ -23,18 +23,18 @@
 
 :root {
   --radius: 2rem;
-  --background: oklch(0.985 0.007 250);
-  --foreground: oklch(0.19 0.02 255);
-  --card: oklch(1 0 0 / 0.9);
-  --card-foreground: oklch(0.19 0.02 255);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
   --primary: #0033a0;
   --primary-foreground: #ffffff;
-  --muted: oklch(0.96 0.01 250 / 0.9);
-  --muted-foreground: oklch(0.48 0.03 255);
-  --border: oklch(0.88 0.015 250 / 0.7);
-  --input: oklch(0.94 0.01 250 / 0.95);
-  --ring: oklch(0.55 0.14 262);
-  --destructive: oklch(0.62 0.22 25);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
 }
 
 @layer base {
@@ -48,23 +48,11 @@
 
   body {
     @apply min-h-dvh bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 14%, transparent), transparent 32%),
-      radial-gradient(circle at bottom right, color-mix(in srgb, var(--primary) 10%, white), transparent 36%),
-      linear-gradient(180deg, #f8fbff 0%, #eef4ff 42%, #f8f9fc 100%);
   }
 }
 
 @layer components {
-  .auth-shell::before {
-    content: "";
-    background:
-      linear-gradient(135deg, color-mix(in srgb, var(--primary) 16%, transparent), transparent 60%),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.1));
-  }
-
-  .auth-shell::after {
-    content: "";
-    background: color-mix(in srgb, var(--primary) 16%, white);
+  .interactive-scale {
+    @apply transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 disabled:active:scale-100;
   }
 }

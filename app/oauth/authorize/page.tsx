@@ -14,19 +14,19 @@ export default async function AuthorizePage({ searchParams }: AuthorizePageProps
     return (
       <AuthShell
         eyebrow="AI WINLAB MCP"
-        title="授權請求無效"
-        description="這次 OAuth 登入請求缺少必要參數，或 client 設定和註冊資訊不一致。"
-        footer={
-          <p className="rounded-xl border border-border bg-muted/70 px-4 py-3 text-sm text-muted-foreground">
-            請回到發起登入的工具重新執行授權流程。
-          </p>
-        }
+        title="登入"
+        description="AI WinLab MCP 授權頁面"
       >
         <div
-          className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
-          role="alert"
+          className="bg-card text-card-foreground flex flex-col gap-6 rounded-[2rem] border border-border p-8"
         >
-          {result.error}
+          <p
+            className="text-sm font-medium text-destructive text-center"
+          role="alert"
+          >
+            {result.error}
+          </p>
+          <p className="text-sm text-muted-foreground text-center">請回到發起登入的工具重新執行授權流程。</p>
         </div>
       </AuthShell>
     );
