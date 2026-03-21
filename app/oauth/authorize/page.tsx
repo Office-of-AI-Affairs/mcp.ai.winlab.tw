@@ -16,9 +16,16 @@ export default async function AuthorizePage({ searchParams }: AuthorizePageProps
         eyebrow="AI WINLAB MCP"
         title="授權請求無效"
         description="這次 OAuth 登入請求缺少必要參數，或 client 設定和註冊資訊不一致。"
-        footer={<p className="auth-note">請回到發起登入的工具重新執行授權流程。</p>}
+        footer={
+          <p className="rounded-xl border border-border bg-muted/70 px-4 py-3 text-sm text-muted-foreground">
+            請回到發起登入的工具重新執行授權流程。
+          </p>
+        }
       >
-        <div className="auth-error" role="alert">
+        <div
+          className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+          role="alert"
+        >
           {result.error}
         </div>
       </AuthShell>

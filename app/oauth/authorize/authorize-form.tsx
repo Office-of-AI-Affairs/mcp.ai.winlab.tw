@@ -60,24 +60,25 @@ export function AuthorizeForm({
       eyebrow="AI WINLAB MCP"
       title="登入以授權工具存取"
       description="這個登入頁會將你的身份授權給 MCP client，登入成功後會自動跳回原本的工具完成連線。"
+      panelClassName="max-w-2xl"
       footer={
-        <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-          <p className="auth-note break-all">
+        <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+          <p className="rounded-xl border border-border bg-muted/70 px-4 py-3 break-all">
             Client: <span className="font-mono text-[13px] text-foreground">{clientId}</span>
           </p>
-          <p className="auth-note break-all">
+          <p className="rounded-xl border border-border bg-muted/70 px-4 py-3 break-all">
             Redirect URI: <span className="font-mono text-[13px] text-foreground">{redirectUri}</span>
           </p>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="email">
+      <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-foreground" htmlFor="email">
             電子信箱
           </label>
           <input
-            className="auth-input"
+            className="h-12 rounded-md border border-border bg-white px-4 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/80 focus:border-primary focus:ring-4 focus:ring-[rgba(0,51,160,0.14)]"
             id="email"
             type="email"
             value={email}
@@ -87,12 +88,12 @@ export function AuthorizeForm({
             placeholder="your@email.com"
           />
         </div>
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="password">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-foreground" htmlFor="password">
             密碼
           </label>
           <input
-            className="auth-input"
+            className="h-12 rounded-md border border-border bg-white px-4 text-base text-foreground outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/80 focus:border-primary focus:ring-4 focus:ring-[rgba(0,51,160,0.14)]"
             id="password"
             type="password"
             value={password}
@@ -103,11 +104,18 @@ export function AuthorizeForm({
           />
         </div>
         {error ? (
-          <p className="auth-error" role="alert">
+          <p
+            className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive md:col-span-2"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
-        <button type="submit" className="auth-button" disabled={loading}>
+        <button
+          type="submit"
+          className="inline-flex h-12 w-full items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 disabled:active:scale-100 md:col-span-2"
+          disabled={loading}
+        >
           {loading ? "登入中..." : "登入並授權"}
         </button>
       </form>
