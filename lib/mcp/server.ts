@@ -21,7 +21,7 @@ export function createMcpServer(supabase: SupabaseClient, userId: string, access
   registerImageTools(server, supabase, userId, accessToken);
   registerAnnouncementTools(server, supabase, userId);
   registerResultTools(server, supabase, userId);
-  registerRecruitmentTools(server, supabase);
+  registerRecruitmentTools(server, supabase, userId);
   registerEventTools(server, supabase);
   registerContactTools(server, supabase);
   registerCarouselTools(server, supabase);

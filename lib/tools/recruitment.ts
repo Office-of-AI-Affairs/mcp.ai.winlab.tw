@@ -66,7 +66,8 @@ const contactSchema = z.object({
 
 export function registerRecruitmentTools(
   server: McpServer,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  userId: string
 ) {
   // --- list_recruitments ---
   server.tool(
@@ -179,6 +180,7 @@ export function registerRecruitmentTools(
           start_date,
           end_date: end_date ?? null,
           event_id: event_id ?? null,
+          created_by: userId,
         })
         .select("id, created_at, updated_at, title, link, image, company_description, start_date, end_date, event_id")
         .single();
