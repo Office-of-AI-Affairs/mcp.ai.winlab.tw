@@ -184,3 +184,7 @@ Notes:
 
 - keep this README in sync with `AGENTS.md` and `rules/*.md`
 - update this file whenever MCP capabilities, auth flow, environment variables, setup commands, or architecture change
+
+## License
+
+[MIT](LICENSE.md) — Speak, friend, and enter.
