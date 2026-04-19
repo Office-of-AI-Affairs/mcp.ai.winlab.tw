@@ -172,7 +172,7 @@ export function registerProfileTools(
   server.tool(
     "list_profiles",
     {
-      role: z.enum(["admin", "user"]).optional(),
+      role: z.enum(["admin", "user", "vendor"]).optional(),
       limit: z.number().int().positive().optional(),
       offset: z.number().int().nonnegative().optional(),
     },
@@ -193,7 +193,7 @@ export function registerProfileTools(
         return error(dbError.message);
       }
 
-      const rows = (data as { id: string; role: "admin" | "user"; created_at: string }[] | null) ?? [];
+      const rows = data ?? [];
 
       if (rows.length === 0) {
         return success([]);

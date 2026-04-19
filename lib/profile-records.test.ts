@@ -9,10 +9,15 @@ const publicProfileFixture: PublicProfile = {
   created_at: "2026-03-21T00:00:00.000Z",
   updated_at: "2026-03-21T00:00:00.000Z",
   display_name: "王小明",
+  avatar_url: null,
+  has_profile_data: true,
 };
 
 const privateProfileFixture: Profile = {
-  ...publicProfileFixture,
+  id: publicProfileFixture.id,
+  created_at: publicProfileFixture.created_at,
+  updated_at: publicProfileFixture.updated_at,
+  display_name: publicProfileFixture.display_name,
   avatar_url: "https://example.com/avatar.png",
   role: "user",
   phone: "0912345678",
