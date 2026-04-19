@@ -17,6 +17,12 @@ This file is the entry point for coding agents working in this repository. Follo
 - Build production bundle: `bun build`
 - Start production server: `bun start`
 - Run lint: `bun lint`
+- Run unit tests: `bun run test`
+- Run typecheck: `bun run typecheck`
+- Run the full pre-push check (mirrors CI): `bun run check`
+- Regenerate `lib/supabase/database.types.ts` from the live schema:
+  `bun run gen:types` (requires `SUPABASE_ACCESS_TOKEN` — see
+  `rules/database-types.md`)
 
 ## Environment Variables
 
@@ -27,6 +33,12 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_BASE_URL=
+```
+
+Tooling-only (not needed at runtime):
+
+```bash
+SUPABASE_ACCESS_TOKEN=    # for `bun run gen:types`
 ```
 
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` remains supported as a fallback for older deployments, but new deployments should prefer `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
@@ -46,6 +58,7 @@ NEXT_PUBLIC_BASE_URL=
 - Coding conventions: `rules/coding-style.md`
 - Documentation maintenance: `rules/documentation.md`
 - Git workflow: `rules/git.md`
+- Database types workflow: `rules/database-types.md`
 
 ## Working Rules
 
@@ -55,7 +68,16 @@ NEXT_PUBLIC_BASE_URL=
 - Validate all external input at the boundary, and return explicit JSON error responses for invalid auth, invalid payloads, and upstream Supabase failures.
 - Keep `AGENTS.md`, `rules/*.md`, and `README.md` aligned when project capabilities or operating assumptions change.
 - Follow `rules/git.md` for topic-based commits and push behavior.
-- This repo depends on the sibling app repo at `~/ai` for shared product schema assumptions. When `~/ai` changes Supabase tables, RLS, shared content models, or admin workflows, verify whether MCP tools and `lib/supabase/types.ts` here also need updates.
+- Sibling app repo: `~/ai.winlab.tw`
+  (`Office-of-AI-Affairs/ai.winlab.tw`). Both repos share **one**
+  Supabase project, so `lib/supabase/database.types.ts` must stay
+  byte-identical across the two. When the main app changes Supabase
+  tables, RLS, content models, or admin workflows, regenerate types
+  and sanity-check every affected MCP tool — see
+  `rules/database-types.md` for the regen flow.
+- CI (`.github/workflows/ci.yml`) runs lint + typecheck + unit tests
+  on every push and PR. Keep `bun run check` green locally before
+  pushing.
 
 ## Maintenance Note
 
