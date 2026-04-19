@@ -5,6 +5,24 @@ import { z } from "zod";
 import { composeProfile } from "@/lib/profile-records";
 import type { Profile, PublicProfile } from "@/lib/supabase/types";
 
+const RESUME_BUCKET = "resumes";
+const RESUME_SIGNED_TTL_SEC = 3600;
+
+// profiles.resume stores an object path (e.g. "<uid>/xxx.pdf") since the
+// migration to the private resumes bucket. Pre-migration rows may still
+// carry an absolute URL — keep those as-is for backward compat.
+async function resolveResumeUrl(
+  supabase: SupabaseClient,
+  resume: string | null | undefined,
+): Promise<string | null> {
+  if (!resume) return null;
+  if (resume.startsWith("http://") || resume.startsWith("https://")) return resume;
+  const { data } = await supabase.storage
+    .from(RESUME_BUCKET)
+    .createSignedUrl(resume, RESUME_SIGNED_TTL_SEC);
+  return data?.signedUrl ?? null;
+}
+
 function success(data: unknown) {
   return {
     content: [
@@ -56,9 +74,12 @@ export function registerProfileTools(
       return error(privateRes.error.message);
     }
 
+    const privateProfile = privateRes.data as Profile;
+    const resumeUrl = await resolveResumeUrl(supabase, privateProfile.resume);
+
     const data = composeProfile(
       publicRes.data as PublicProfile,
-      privateRes.data as Profile
+      { ...privateProfile, resume: resumeUrl }
     );
 
     return success(data);
@@ -138,8 +159,11 @@ export function registerProfileTools(
         return error(privateRes.error.message);
       }
 
+      const privateProfile = privateRes.data as Profile;
+      const resumeUrl = await resolveResumeUrl(supabase, privateProfile.resume);
+
       return success(
-        composeProfile(publicRes.data as PublicProfile, privateRes.data as Profile)
+        composeProfile(publicRes.data as PublicProfile, { ...privateProfile, resume: resumeUrl })
       );
     }
   );
