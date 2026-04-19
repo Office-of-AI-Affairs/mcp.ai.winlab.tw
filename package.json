@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run lint && bun run typecheck && bun run test",
+    "gen:types": "bunx supabase gen types typescript --project-id hwezfbhjcetpezfuvelf > lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
