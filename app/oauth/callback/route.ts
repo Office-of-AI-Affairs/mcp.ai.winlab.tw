@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { ZodError, z } from "zod";
 import { createAuthCode } from "@/lib/auth/auth-codes";
+import { mintMcpToken } from "@/lib/auth/jwt";
 import { validateOAuthClientRequest } from "@/lib/auth/oauth-request";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 import { getMcpResourceUrl } from "@/lib/auth/urls";
@@ -66,10 +67,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const access = mintMcpToken(data.session.user.id, {
+    email: data.session.user.email,
+  });
+  const refresh = mintMcpToken(data.session.user.id, {
+    email: data.session.user.email,
+  });
+
   const code = await createAuthCode({
-    accessToken: data.session.access_token,
-    refreshToken: data.session.refresh_token,
-    expiresIn: data.session.expires_in ?? null,
+    accessToken: access.token,
+    refreshToken: refresh.token,
+    expiresIn: access.expiresIn,
     codeChallenge: body.codeChallenge,
     redirectUri: body.redirectUri,
     clientId: body.clientId,

@@ -1,6 +1,7 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createMcpServer } from "@/lib/mcp/server";
 import { getProtectedResourceMetadataUrl } from "@/lib/auth/urls";
+import { verifyMcpToken } from "@/lib/auth/jwt";
 import { createClientWithToken } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -21,13 +22,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createClientWithToken(token);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
+  const claims = verifyMcpToken(token);
+  if (!claims) {
     return Response.json(
       { error: "Invalid or expired token" },
       {
@@ -39,7 +35,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const server = createMcpServer(supabase, user.id, token);
+  const supabase = createClientWithToken(token);
+  const server = createMcpServer(supabase, claims.sub, token);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });

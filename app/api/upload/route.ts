@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { verifyMcpToken } from "@/lib/auth/jwt";
 import { createClientWithToken } from "@/lib/supabase/server";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 
@@ -67,11 +68,10 @@ async function authenticateRequest(request: Request) {
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return { error: "Missing authorization" };
 
-  const supabase = createClientWithToken(token);
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { error: "Invalid or expired token" };
+  const claims = verifyMcpToken(token);
+  if (!claims) return { error: "Invalid or expired token" };
 
-  return { supabase, userId: user.id };
+  return { supabase: createClientWithToken(token), userId: claims.sub };
 }
 
 export async function POST(request: Request) {
