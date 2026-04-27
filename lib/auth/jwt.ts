@@ -35,7 +35,13 @@ export async function verifyMcpToken(
     if (typeof payload.sub !== "string" || payload.sub.length === 0) return null;
 
     return payload as unknown as McpTokenClaims;
-  } catch {
+  } catch (error) {
+    console.error("[verifyMcpToken] failed:", {
+      message: error instanceof Error ? error.message : String(error),
+      code: error instanceof Error ? (error as Error & { code?: string }).code : undefined,
+      issuer: `${supabaseUrl}/auth/v1`,
+      tokenPreview: token.slice(0, 40) + "...",
+    });
     return null;
   }
 }
