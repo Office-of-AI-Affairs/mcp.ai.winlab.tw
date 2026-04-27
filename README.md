@@ -102,6 +102,7 @@ Representative capabilities include:
 - list, get, create, and update results
 - list, get, create, and update recruitments
 - list, get, create, and update events
+- list event members (with email + tags + "尚無資料" filter, admin only)
 - list and update introduction content
 - list and update carousel slides and contacts
 - read and update the authenticated user's profile
