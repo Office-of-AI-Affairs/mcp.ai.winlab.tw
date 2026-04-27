@@ -11,7 +11,6 @@ import type { Tables } from "./database.types";
 export type ExternalResult = Tables<"external_results">;
 export type CarouselSlide = Tables<"carousel_slides">;
 export type Event = Tables<"events">;
-export type EventVendor = Tables<"event_vendors">;
 export type EventParticipant = Tables<"event_participants">;
 export type Introduction = Omit<Tables<"introduction">, "content"> & {
   content: Record<string, unknown>;
