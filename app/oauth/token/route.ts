@@ -1,11 +1,12 @@
+import { createClient } from "@supabase/supabase-js";
 import { exchangeAuthCode } from "@/lib/auth/auth-codes";
-import { mintMcpToken, verifyMcpToken } from "@/lib/auth/jwt";
 import { verifyPkce } from "@/lib/auth/pkce";
 import {
   parseTokenAuthorizationCodeRequest,
   validateOAuthClientRequest,
 } from "@/lib/auth/oauth-request";
 import { getMcpResourceUrl } from "@/lib/auth/urls";
+import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
 
 export async function POST(request: Request) {
   const body = await request.formData();
@@ -129,24 +130,25 @@ async function handleRefreshToken(body: FormData) {
     );
   }
 
-  const claims = verifyMcpToken(refreshToken);
-  if (!claims) {
+  const supabase = createClient(supabaseUrl, supabasePublishableKey);
+  const { data, error } = await supabase.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+
+  if (error || !data.session) {
     return Response.json(
       {
         error: "invalid_grant",
-        error_description: "Invalid or expired refresh token",
+        error_description: error?.message || "Invalid or expired refresh token",
       },
       { status: 400 }
     );
   }
 
-  const access = mintMcpToken(claims.sub, { email: claims.email });
-  const refresh = mintMcpToken(claims.sub, { email: claims.email });
-
   return Response.json({
-    access_token: access.token,
-    refresh_token: refresh.token,
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
     token_type: "Bearer",
-    expires_in: access.expiresIn,
+    expires_in: data.session.expires_in,
   });
 }

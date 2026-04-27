@@ -15,6 +15,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
     "@supabase/supabase-js": "^2.91.0",
+    "jose": "^6.2.2",
     "next": "^16.1.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

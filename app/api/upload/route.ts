@@ -68,7 +68,7 @@ async function authenticateRequest(request: Request) {
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   if (!token) return { error: "Missing authorization" };
 
-  const claims = verifyMcpToken(token);
+  const claims = await verifyMcpToken(token);
   if (!claims) return { error: "Invalid or expired token" };
 
   return { supabase: createClientWithToken(token), userId: claims.sub };
