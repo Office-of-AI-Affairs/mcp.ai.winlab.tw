@@ -24,12 +24,8 @@ export async function POST(request: Request) {
 
   const claims = await verifyMcpToken(token);
   if (!claims) {
-    let header: unknown = null;
-    let payload: unknown = null;
-    try { header = JSON.parse(Buffer.from(token.split(".")[0] ?? "", "base64url").toString()); } catch {}
-    try { payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString()); } catch {}
     return Response.json(
-      { error: "Invalid or expired token", debug: { header, payload, expectedIssuer: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1` } },
+      { error: "Invalid or expired token" },
       {
         status: 401,
         headers: {
