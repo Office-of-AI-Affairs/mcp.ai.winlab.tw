@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const claims = verifyMcpToken(token);
+  const claims = await verifyMcpToken(token);
   if (!claims) {
     return Response.json(
       { error: "Invalid or expired token" },
