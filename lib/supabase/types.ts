@@ -36,9 +36,6 @@ export type Profile = Pick<
   | "social_links"
 >;
 export type PublicProfile = Tables<"public_profiles">;
-export type Team = Tables<"teams">;
-export type TeamMember = Tables<"team_members">;
-export type TeamInvitation = Tables<"team_invitations">;
 export type Contact = Tables<"contacts">;
 export type Tag = Tables<"tags">;
 export type ResultTag = Tables<"result_tags">;
@@ -47,7 +44,6 @@ export type ResultCoauthor = Tables<"result_coauthors">;
 export type OrganizationMemberCategory = "core" | "legal_entity" | "industry";
 export type OrganizationMember = Tables<"organization_members">;
 
-export type ResultType = "personal" | "team";
 export type Result = Omit<Tables<"results">, "content" | "summary"> & {
   content: Record<string, unknown>;
   summary: string;

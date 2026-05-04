@@ -47,15 +47,14 @@ export function registerResultTools(
     {
       event_id: z.string().uuid().optional(),
       status: z.enum(["draft", "published"]).optional(),
-      type: z.enum(["personal", "team"]).optional(),
       limit: z.number().int().positive().optional(),
       offset: z.number().int().nonnegative().optional(),
     },
-    async ({ event_id, status, type, limit, offset }) => {
+    async ({ event_id, status, limit, offset }) => {
       let query = supabase
         .from("results")
         .select(
-          "id, title, date, summary, status, type, author_id, team_id, event_id, pinned, header_image, created_at"
+          "id, title, date, summary, status, author_id, event_id, pinned, header_image, created_at"
         )
         .order("date", { ascending: false })
         .range(offset ?? 0, (offset ?? 0) + (limit ?? 20) - 1);
@@ -66,10 +65,6 @@ export function registerResultTools(
 
       if (status) {
         query = query.eq("status", status);
-      }
-
-      if (type) {
-        query = query.eq("type", type);
       }
 
       const { data, error: dbError } = await query;
@@ -112,10 +107,8 @@ export function registerResultTools(
       content: z.string(),
       content_format: z.enum(["markdown", "tiptap"]).optional(),
       date: z.string(),
-      type: z.enum(["personal", "team"]),
       status: z.enum(["draft", "published"]).optional(),
       event_id: z.string().uuid().optional(),
-      team_id: z.string().uuid().optional(),
       header_image: z.string().optional(),
     },
     async ({
@@ -124,10 +117,8 @@ export function registerResultTools(
       content,
       content_format,
       date,
-      type,
       status,
       event_id,
-      team_id,
       header_image,
     }) => {
       let tiptapContent: Record<string, unknown>;
@@ -146,10 +137,8 @@ export function registerResultTools(
           summary,
           content: tiptapContent,
           date,
-          type,
           status: status ?? "draft",
           event_id: event_id ?? null,
-          team_id: team_id ?? null,
           header_image: header_image ?? null,
           author_id: userId,
           pinned: false,
@@ -175,9 +164,7 @@ export function registerResultTools(
       content: z.string().optional(),
       content_format: z.enum(["markdown", "tiptap"]).optional(),
       date: z.string().optional(),
-      type: z.enum(["personal", "team"]).optional(),
       status: z.enum(["draft", "published"]).optional(),
-      team_id: z.string().uuid().optional(),
       header_image: z.string().optional(),
     },
     async ({
@@ -187,9 +174,7 @@ export function registerResultTools(
       content,
       content_format,
       date,
-      type,
       status,
-      team_id,
       header_image,
     }) => {
       const updates: Record<string, unknown> = {};
@@ -197,9 +182,7 @@ export function registerResultTools(
       if (title !== undefined) updates.title = title;
       if (summary !== undefined) updates.summary = summary;
       if (date !== undefined) updates.date = date;
-      if (type !== undefined) updates.type = type;
       if (status !== undefined) updates.status = status;
-      if (team_id !== undefined) updates.team_id = team_id;
       if (header_image !== undefined) updates.header_image = header_image;
 
       if (content !== undefined) {
