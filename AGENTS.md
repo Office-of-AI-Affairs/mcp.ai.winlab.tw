@@ -1,3 +1,9 @@
+> [!IMPORTANT]
+> **This repo is archived.** mcp.ai.winlab.tw moved into the
+> [`ai.winlab.tw` monorepo](https://github.com/Office-of-AI-Affairs/ai.winlab.tw)
+> (`apps/mcp`) on 2026-05-12 — develop and deploy from there. Nothing here
+> deploys anywhere.
+
 # AGENTS.md
 
 This file is the entry point for coding agents working in this repository. Follow the repo-level rules here first, then read the referenced files in `rules/` before making changes.
